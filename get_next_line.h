@@ -13,6 +13,8 @@
 #ifndef GET_NEXT_LINE_H
 # define GET_NEXT_LINE_H
 
+# include <fcntl.h>
+# include <stdio.h>
 # include "libft.h"
 
 # define BUFF_SIZE 32
@@ -23,6 +25,6 @@ typedef struct	s_rest_fd
 	char		*rest;
 }				t_rest_fd;
 
-int	get_next_line(const int fd, char **line);
+int				get_next_line(const int fd, char **line);
 
 #endif
