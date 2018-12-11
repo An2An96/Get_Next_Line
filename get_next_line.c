@@ -6,7 +6,7 @@
 /*   By: rschuppe <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/12/07 12:34:33 by rschuppe          #+#    #+#             */
-/*   Updated: 2018/12/07 12:34:34 by rschuppe         ###   ########.fr       */
+/*   Updated: 2018/12/10 21:09:43 by rschuppe         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,14 +31,12 @@ static t_list	*find_element_by_fd(t_list **alst, const int fd)
 	new = ft_lstnew(content, sizeof(t_rest_fd));
 	if (new)
 		ft_lstadd(alst, new);
-	//printf("NEW ELEMENT: fd = %d, rest = %s\n", ((t_rest_fd*)(new->content))->fd, ((t_rest_fd*)(new->content))->rest);
 	return (new);
 }
 
-static int	get_line_in_string(char **str, char **result)
+static int		get_line_in_string(char **str, char **result)
 {
 	char	*ptr;
-	//char	*tmp;
 
 	if (str && *str)
 	{
@@ -47,9 +45,10 @@ static int	get_line_in_string(char **str, char **result)
 		{
 			*ptr = '\0';
 			*result = ft_strdup(*str);
-			//*result = ft_strsub(*str, 0, ptr - *str);
-			ptr = ft_strdup(ptr + 1);
-			//ptr = ft_strsub(*str, (size_t)(ptr + 1), ft_strlen(ptr + 1));
+			if (*(ptr + 1))
+				ptr = ft_strdup(ptr + 1);
+			else
+				ptr = NULL;
 			free(*str);
 			*str = ptr;
 			return (1);
@@ -64,51 +63,61 @@ static int	get_line_in_string(char **str, char **result)
 	return (0);
 }
 
-static int read_line_fd(const int fd, char **line, char **rest)
+static int		read_line_fd(const int fd, char **line, char **rest)
 {
-	char	buf[BUFF_SIZE];
+	char	buf[BUFF_SIZE + 1];
 	int		readed_len;
 	char	*tmp;
-	int 	res;
+	int		res;
 
-	while ((readed_len = read(fd, buf, BUFF_SIZE)))
+	while ((readed_len = read(fd, buf, BUFF_SIZE)) != -1)
 	{
+		if (readed_len == 0)
+			return (*line ? 1 : 0);
 		buf[readed_len] = '\0';
-
 		tmp = ft_strjoin(*rest, buf);
 		free(*rest);
 		*rest = tmp;
-
-		//printf("read: %s %s", buf, *rest);
-
 		res = get_line_in_string(rest, &tmp);
-		
 		tmp = ft_strjoin(*line, tmp);
 		free(*line);
 		*line = tmp;
-		
 		if (res || readed_len < BUFF_SIZE)
 			return (1);
 	}
-	return (0);
+	return (-1);
 }
 
-int	get_next_line(const int fd, char **line)
+void			clear_fd(void *content, size_t content_size)
+{
+	content_size = 0;
+	free(content);
+}
+
+int				get_next_line(const int fd, char **line)
 {
 	static t_list	*fd_rest_list;
-	t_list			*fd_rest;
+	t_list			*fd_rest_el;
 	t_rest_fd		*cur_fd_rest;
+	char			*line_tmp;
+	int				read_res;
 
-	fd_rest = find_element_by_fd(&fd_rest_list, fd);
-	if (fd_rest)
+	read_res = -1;
+	line_tmp = NULL;
+	if (fd >= 0)
 	{
-		cur_fd_rest = (t_rest_fd*)(fd_rest->content);
-		//printf("el: fd = %d, rest = %s\n", cur_fd_rest->fd, cur_fd_rest->rest);
-		if (get_line_in_string(&(cur_fd_rest->rest), line) == 0)
+		fd_rest_el = find_element_by_fd(&fd_rest_list, fd);
+		if (fd_rest_el)
 		{
-			read_line_fd(fd, line, &(cur_fd_rest->rest));
+			cur_fd_rest = (t_rest_fd*)(fd_rest_el->content);
+			read_res = get_line_in_string(&(cur_fd_rest->rest), &line_tmp);
+			if (read_res == 0)
+				read_res = read_line_fd(fd, &line_tmp, &(cur_fd_rest->rest));
+			if (read_res > 0)
+				*line = line_tmp;
+			// else
+			// 	ft_lstremove(&fd_rest_list, fd_rest_el, clear_fd);
 		}
-		return (ft_strlen(cur_fd_rest->rest) ? 1 : 0);
 	}
-	return (-1);
+	return (read_res);
 }

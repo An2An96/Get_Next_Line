@@ -6,7 +6,7 @@
 /*   By: rschuppe <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/12/07 12:34:47 by rschuppe          #+#    #+#             */
-/*   Updated: 2018/12/07 12:34:48 by rschuppe         ###   ########.fr       */
+/*   Updated: 2018/12/10 21:10:20 by rschuppe         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,10 +14,9 @@
 # define GET_NEXT_LINE_H
 
 # include <fcntl.h>
-# include <stdio.h>
 # include "libft.h"
 
-# define BUFF_SIZE 32
+# define BUFF_SIZE 9999
 
 typedef struct	s_rest_fd
 {
