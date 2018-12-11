@@ -12,28 +12,6 @@
 
 #include "get_next_line.h"
 
-static t_list	*find_element_by_fd(t_list **alst, const int fd)
-{
-	t_list		*tmp;
-	t_list		*new;
-	t_rest_fd	*content;
-
-	tmp = *alst;
-	while (tmp)
-	{
-		if (((t_rest_fd*)(tmp->content))->fd == fd)
-			return (tmp);
-		tmp = tmp->next;
-	}
-	content = (t_rest_fd*)malloc(sizeof(t_rest_fd));
-	content->fd = fd;
-	content->rest = NULL;
-	new = ft_lstnew(content, sizeof(t_rest_fd));
-	if (new)
-		ft_lstadd(alst, new);
-	return (new);
-}
-
 static int		get_line_in_string(char **str, char **result)
 {
 	char	*ptr;
@@ -44,9 +22,13 @@ static int		get_line_in_string(char **str, char **result)
 		if (ptr)
 		{
 			*ptr = '\0';
-			*result = ft_strdup(*str);
+			if ((*result = ft_strdup(*str)) == NULL)
+				return (-1);
 			if (*(ptr + 1))
-				ptr = ft_strdup(ptr + 1);
+			{
+				if ((ptr = ft_strdup(ptr + 1)) == NULL)
+					return (-1);
+			}
 			else
 				ptr = NULL;
 			free(*str);
@@ -55,7 +37,8 @@ static int		get_line_in_string(char **str, char **result)
 		}
 		else
 		{
-			*result = ft_strdup(*str);
+			if ((*result = ft_strdup(*str)) == NULL)
+				return (-1);
 			free(*str);
 			*str = NULL;
 		}
@@ -63,9 +46,8 @@ static int		get_line_in_string(char **str, char **result)
 	return (0);
 }
 
-static int		read_line_fd(const int fd, char **line, char **rest)
+static int		read_line_fd(const int fd, char *buf, char **line, char **rest)
 {
-	char	buf[BUFF_SIZE + 1];
 	int		readed_len;
 	char	*tmp;
 	int		res;
@@ -75,11 +57,14 @@ static int		read_line_fd(const int fd, char **line, char **rest)
 		if (readed_len == 0)
 			return (*line ? 1 : 0);
 		buf[readed_len] = '\0';
-		tmp = ft_strjoin(*rest, buf);
+		if ((tmp = ft_strjoin(*rest, buf)) == NULL)
+			return (-1);
 		free(*rest);
 		*rest = tmp;
-		res = get_line_in_string(rest, &tmp);
-		tmp = ft_strjoin(*line, tmp);
+		if ((res = get_line_in_string(rest, &tmp)) == -1)
+			return (-1);
+		if ((tmp = ft_strjoin(*line, tmp)) == NULL)
+			return (-1);
 		free(*line);
 		*line = tmp;
 		if (res || readed_len < BUFF_SIZE)
@@ -88,36 +73,36 @@ static int		read_line_fd(const int fd, char **line, char **rest)
 	return (-1);
 }
 
-void			clear_fd(void *content, size_t content_size)
-{
-	content_size = 0;
-	free(content);
-}
-
 int				get_next_line(const int fd, char **line)
 {
-	static t_list	*fd_rest_list;
-	t_list			*fd_rest_el;
-	t_rest_fd		*cur_fd_rest;
+	static char		*rest_fd[MAX_FD];
+	char			*buf;
 	char			*line_tmp;
 	int				read_res;
 
 	read_res = -1;
-	line_tmp = NULL;
-	if (fd >= 0)
+	if (fd >= 0 && fd <= MAX_FD)
 	{
-		fd_rest_el = find_element_by_fd(&fd_rest_list, fd);
-		if (fd_rest_el)
+		line_tmp = NULL;
+		if ((read_res = get_line_in_string(&rest_fd[fd], &line_tmp)) == 0)
 		{
-			cur_fd_rest = (t_rest_fd*)(fd_rest_el->content);
-			read_res = get_line_in_string(&(cur_fd_rest->rest), &line_tmp);
-			if (read_res == 0)
-				read_res = read_line_fd(fd, &line_tmp, &(cur_fd_rest->rest));
-			if (read_res > 0)
-				*line = line_tmp;
-			// else
-			// 	ft_lstremove(&fd_rest_list, fd_rest_el, clear_fd);
+			if ((buf = ft_strnew(BUFF_SIZE)))
+			{
+				read_res = read_line_fd(fd, buf, &line_tmp, &rest_fd[fd]);
+				free(buf);
+			}
+			else
+				read_res = -1;
 		}
+		if (read_res > 0)
+			*line = line_tmp;
+		else if (read_res == -1)
+		{
+			free(line_tmp);
+			free(rest_fd[fd]);
+		}
+		else
+			free(rest_fd[fd]);
 	}
 	return (read_res);
 }

@@ -16,13 +16,8 @@
 # include <fcntl.h>
 # include "libft.h"
 
-# define BUFF_SIZE 9999
-
-typedef struct	s_rest_fd
-{
-	int			fd;
-	char		*rest;
-}				t_rest_fd;
+# define BUFF_SIZE	9999
+# define MAX_FD		8192
 
 int				get_next_line(const int fd, char **line);
 
