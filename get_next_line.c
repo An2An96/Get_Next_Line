@@ -72,7 +72,7 @@ int			get_next_line(const int fd, char **line)
 	char			*line_tmp;
 	int				read_res;
 
-	if (fd < 0 || fd >= MAX_FD)
+	if (fd < 0 || fd >= MAX_FD || !line)
 		return (-1);
 	line_tmp = NULL;
 	buf = NULL;
